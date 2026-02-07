@@ -2,7 +2,7 @@
 
 The Identity Provider and Auth gateway for Colosseum.
 
-This microservice handles user authentication exclusively via Google OAuth 2.0 and manages the source of truth for user profiles.
+This microservice handles user authentication via Google OAuth 2.0 and manages the source of truth for user profiles.
 
 ## 🏗 Structure
 
@@ -13,12 +13,18 @@ colosseum-core/
 ├── app/
 │   ├── main.py               # The entry point.
 │   ├── api/
-│   │   └── auth.py           # Handles "Login with Google" and JWT creation.
+│   │   ├── v1/
+│   │   │   ├── auth.py       # Handles "Login with Google" and JWT creation.
+│   │   │   └── users.py      # User profile endpoints.
+│   │   └── deps.py           # Dependency injection (Current User, DB Session).
 │   ├── db/
-│   │   └── models.py         # The 'Users' table definition.
+│   │   └── session.py        # Database connection logic.
+│   ├── models/
+│   │   └── user.py           # The 'Users' table definition.
 │   └── core/
+│       ├── config.py         # Settings and Environment Variables.
 │       └── security.py       # Logic to sign and encrypt JWTs.
-└── migrations/               # SQL scripts for database schema.
+└── alembic/                  # Database migrations.
 ```
 
 ## 🚀 Features
@@ -26,19 +32,23 @@ colosseum-core/
 - **Google OAuth 2.0**: Secure third-party authentication.
 - **JWT Management**: Issues secure tokens for local session state.
 - **Identity Storage**: Maintains the primary User database.
+- **REST API**: Provides endpoints for user data and batch retrieval.
 
 ## 🛠 Tech Stack
 
 - **Framework**: FastAPI (Python)
-- **Auth**: Authlib
-- **Database Logic**: SQLAlchemy (Async)
+- **Auth**: Authlib, Python-Jose
+- **Database Logic**: SQLAlchemy 2.0 (Async)
 - **Database**: PostgreSQL
+- **Migrations**: Alembic
+- **Testing**: Pytest, Pytest-Asyncio
 
 ## 📦 Local Development (via Docker)
 
 This service is intended to be run as part of the Colosseum stack via `colosseum-infra`.
 
+To run tests:
 ```bash
-# To build the image manually
-docker build -t colosseum-core .
+# In colosseum-infra directory
+docker-compose exec core-service pytest
 ```

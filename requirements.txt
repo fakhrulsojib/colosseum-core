@@ -1,8 +1,21 @@
 fastapi
 uvicorn
-authlib
-sqlalchemy
-asyncpg
-python-jose[cryptography]
-httpx
-pydantic-settings
+authlib==1.3.0
+sqlalchemy==2.0.23
+asyncpg==0.29.0
+python-jose[cryptography]==3.3.0
+httpx==0.25.1
+pydantic-settings==2.1.0
+alembic==1.12.1
+python-multipart==0.0.6
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+itsdangerous==2.1.2
+email-validator
+
+# Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-mock==3.12.0
+httpx==0.25.1
+coverage==7.3.2

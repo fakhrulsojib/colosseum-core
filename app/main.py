@@ -1,10 +1,18 @@
 from fastapi import FastAPI
-from app.api import auth
+from starlette.middleware.sessions import SessionMiddleware
+from app.core.config import settings
+from app.api.v1 import auth, users
 
-app = FastAPI(title="Colosseum Core", version="0.1.0")
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    openapi_url=f"{settings.API_V1_STR}/openapi.json"
+)
 
-app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
+
+app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
+app.include_router(users.router, prefix=f"{settings.API_V1_STR}/users", tags=["users"])
 
 @app.get("/")
-async def root():
-    return {"message": "Welcome to Colosseum Core Identity Provider"}
+def root():
+    return {"message": "Welcome to Colosseum Core"}
