@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+authlib
+sqlalchemy
+asyncpg
+python-jose[cryptography]
+httpx
+pydantic-settings
