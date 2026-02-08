@@ -8,6 +8,14 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 
+@app.on_event("startup")
+async def create_tables():
+    from app.db.base import Base
+    from app.db.session import engine
+    async with engine.begin() as conn:
+        # Create tables if they don't exist
+        await conn.run_sync(Base.metadata.create_all)
+
 app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
 
 app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])

@@ -40,6 +40,6 @@ async def callback(request: Request, session: SessionDep):
         await session.refresh(user)
         
         access_token = security.create_access_token(user.id)
-        return RedirectResponse(url=f"http://localhost:3000/auth/success?token={access_token}")
+        return RedirectResponse(url=f"{settings.FRONTEND_URL}/auth/success?token={access_token}")
         
     return {"error": "Authentication failed"}
