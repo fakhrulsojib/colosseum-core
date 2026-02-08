@@ -12,42 +12,49 @@ colosseum-core/
 ├── requirements.txt          # Dependencies (FastAPI, Authlib, SQLAlchemy).
 ├── app/
 │   ├── main.py               # The entry point.
-│   ├── api/
-│   │   ├── v1/
-│   │   │   ├── auth.py       # Handles "Login with Google" and JWT creation.
-│   │   │   └── users.py      # User profile endpoints.
-│   │   └── deps.py           # Dependency injection (Current User, DB Session).
-│   ├── db/
-│   │   └── session.py        # Database connection logic.
-│   ├── models/
-│   │   └── user.py           # The 'Users' table definition.
-│   └── core/
-│       ├── config.py         # Settings and Environment Variables.
-│       └── security.py       # Logic to sign and encrypt JWTs.
+│   ├── api/                  # API endpoints and dependencies.
+│   ├── db/                   # Database connection and sessions.
+│   ├── models/               # SQLAlchemy ORM models.
+│   ├── core/                 # Configuration and security logic.
+│   ├── schemas/              # Pydantic data models.
+│   └── services/             # External service integrations (Google).
 └── alembic/                  # Database migrations.
 ```
 
+## ⚡ Quick Start
+
+This service is part of the larger Colosseum ecosystem. To get it running quickly:
+
+1.  **Clone the Infrastructure Repo**: This project relies on the central gateway and database managed by `colosseum-infra`.
+2.  **Set up Environment**:
+    -   Copy `.env.example` to `.env`.
+    -   Fill in your `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
+3.  **Run via Infra**:
+    ```bash
+    # From the colosseum-infra directory
+    make dev
+    ```
+
 ## 🚀 Features
 
-- **Google OAuth 2.0**: Secure third-party authentication.
-- **JWT Management**: Issues secure tokens for local session state.
-- **Identity Storage**: Maintains the primary User database.
-- **REST API**: Provides endpoints for user data and batch retrieval.
+-   **Google OAuth 2.0**: Secure third-party authentication.
+-   **JWT Management**: Issues secure tokens for system-wide state.
+-   **Identity Storage**: Maintains the primary User database.
+-   **REST API**: High-performance FastAPI endpoints.
 
 ## 🛠 Tech Stack
 
-- **Framework**: FastAPI (Python)
-- **Auth**: Authlib, Python-Jose
-- **Database Logic**: SQLAlchemy 2.0 (Async)
-- **Database**: PostgreSQL
-- **Migrations**: Alembic
-- **Testing**: Pytest, Pytest-Asyncio
+Detailed architecture and technical specifications can be found in [ARCHITECTURE.md](./ARCHITECTURE.md).
 
-## 📦 Local Development (via Docker)
+-   **Framework**: FastAPI (Python 3.11+)
+-   **Database**: PostgreSQL (Async)
+-   **Auth**: Authlib, Python-Jose
+-   **Migrations**: Alembic
 
-This service is intended to be run as part of the Colosseum stack via `colosseum-infra`.
+## 📦 Local Development
 
-To run tests:
+### Testing
+To run tests inside the container:
 ```bash
 # In colosseum-infra directory
 docker-compose exec core-service pytest
