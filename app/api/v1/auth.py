@@ -1,8 +1,6 @@
-from fastapi import APIRouter, Request, Depends
-from starlette.responses import RedirectResponse
+import requests
+from fastapi import APIRouter, Request, Depends, HTTPException
 from sqlalchemy import select
-
-from app.services.google import oauth
 from app.api.deps import SessionDep
 from app.models.user import User
 from app.core import security
@@ -10,23 +8,34 @@ from app.core.config import settings
 
 router = APIRouter()
 
-@router.get("/login")
-async def login(request: Request):
-    redirect_uri = request.url_for('auth_callback')
-    return await oauth.google.authorize_redirect(request, redirect_uri)
+@router.post("/google")
+async def verify_google_token(token_data: dict, session: SessionDep):
+    token = token_data.get('access_token')
+    if not token:
+         raise HTTPException(status_code=400, detail="Missing access_token")
 
-@router.get("/callback", name='auth_callback')
-async def callback(request: Request, session: SessionDep):
-    token = await oauth.google.authorize_access_token(request)
-    user_info = token.get('userinfo')
-    if user_info:
+    try:
+        # Verify access token by fetching user info
+        response = requests.get(
+             'https://www.googleapis.com/oauth2/v3/userinfo',
+             headers={'Authorization': f'Bearer {token}'}
+        )
+        if response.status_code != 200:
+            raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+            
+        user_info = response.json()
+        email = user_info.get('email')
+        
+        if not email:
+             raise HTTPException(status_code=400, detail="Email not found in token")
+
         # Upsert user
-        result = await session.execute(select(User).where(User.email == user_info['email']))
+        result = await session.execute(select(User).where(User.email == email))
         user = result.scalars().first()
         
         if not user:
              user = User(
-                 email=user_info['email'],
+                 email=email,
                  full_name=user_info.get('name'),
                  avatar_url=user_info.get('picture'),
                  google_sub=user_info.get('sub')
@@ -40,6 +49,8 @@ async def callback(request: Request, session: SessionDep):
         await session.refresh(user)
         
         access_token = security.create_access_token(user.id)
-        return RedirectResponse(url=f"{settings.FRONTEND_URL}/auth/success?token={access_token}")
+        return {"access_token": access_token, "token_type": "bearer", "user": {"email": user.email, "name": user.full_name, "picture": user.avatar_url}}
         
-    return {"error": "Authentication failed"}
+    except Exception as e:
+        print(f"Auth Error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
