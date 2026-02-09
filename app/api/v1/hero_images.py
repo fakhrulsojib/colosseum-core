@@ -1,36 +1,95 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from sqlalchemy.future import select
+from typing import List, Optional
 from pydantic import BaseModel
-from typing import List
+
+from app.db.session import get_db
+from app.models.hero_image import HeroImage
 
 router = APIRouter()
 
-class HeroImage(BaseModel):
-    id: int
+# Pydantic models
+class HeroImageBase(BaseModel):
     url: str
-    alt: str
-    title: str
-    subtitle: str
+    alt: Optional[str] = None
+    title: Optional[str] = None
+    subtitle: Optional[str] = None
+    is_active: bool = True
 
-hero_images_data = [
-    {
-        "id": 1,
-        "url": 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1200&h=600&fit=crop',
-        "alt": 'Soccer Match',
-        "title": 'FIFA World League',
-        "subtitle": 'Experience the thrill of virtual football'
-    },
-    {
-        "id": 2,
-        "url": 'https://images.unsplash.com/photo-1624526267942-ab0ff8a3e972?w=1200&h=600&fit=crop',
-        "alt": 'Cricket Match',
-        "title": 'Cricket T20 Series',
-        "subtitle": 'Big hits and massive sixes'
-    }
-]
+class HeroImageCreate(HeroImageBase):
+    pass
 
-@router.get("/", response_model=List[HeroImage])
-def get_hero_images():
+class HeroImageUpdate(BaseModel):
+    url: Optional[str] = None
+    alt: Optional[str] = None
+    title: Optional[str] = None
+    subtitle: Optional[str] = None
+    is_active: Optional[bool] = None
+
+class HeroImageResponse(HeroImageBase):
+    id: int
+
+    class Config:
+        orm_mode = True
+
+@router.get("/", response_model=List[HeroImageResponse])
+async def get_active_hero_images(db: Session = Depends(get_db)):
     """
-    Get list of hero images for the main landing page.
+    Get list of active hero images for the main landing page.
     """
-    return hero_images_data
+    result = await db.execute(select(HeroImage).filter(HeroImage.is_active == True))
+    return result.scalars().all()
+
+@router.get("/all", response_model=List[HeroImageResponse])
+async def get_all_hero_images(db: Session = Depends(get_db)):
+    """
+    Get all hero images (active and inactive).
+    """
+    result = await db.execute(select(HeroImage))
+    return result.scalars().all()
+
+@router.post("/", response_model=HeroImageResponse)
+async def create_hero_image(image: HeroImageCreate, db: Session = Depends(get_db)):
+    """
+    Create a new hero image.
+    """
+    db_image = HeroImage(**image.dict())
+    db.add(db_image)
+    await db.commit()
+    await db.refresh(db_image)
+    return db_image
+
+@router.patch("/{image_id}", response_model=HeroImageResponse)
+async def update_hero_image(image_id: int, image_update: HeroImageUpdate, db: Session = Depends(get_db)):
+    """
+    Update a hero image.
+    """
+    result = await db.execute(select(HeroImage).filter(HeroImage.id == image_id))
+    db_image = result.scalars().first()
+    
+    if not db_image:
+        raise HTTPException(status_code=404, detail="Hero image not found")
+    
+    update_data = image_update.dict(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_image, key, value)
+    
+    await db.commit()
+    await db.refresh(db_image)
+    return db_image
+
+@router.delete("/{image_id}")
+async def delete_hero_image(image_id: int, db: Session = Depends(get_db)):
+    """
+    Delete a hero image.
+    """
+    result = await db.execute(select(HeroImage).filter(HeroImage.id == image_id))
+    db_image = result.scalars().first()
+    
+    if not db_image:
+        raise HTTPException(status_code=404, detail="Hero image not found")
+    
+    await db.delete(db_image)
+    await db.commit()
+    return {"ok": True}
